@@ -95,7 +95,6 @@ class UDP_DB:
 port = int(os.getenv("UDP_PORT", "1120"))
 try:
     udp_interfaces = os.getenv("UDP_INTERFACES", '["lo", "end0", "docker0"]')
-    udp_interfaces = '["lo", "en0"]'
     interfaces = literal_eval(udp_interfaces)
 except Exception as e:
     print(e)
