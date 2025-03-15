@@ -1,7 +1,9 @@
 import speedtest
 from threading import Thread
+import os
+import requests
 import time
-from .udp_broadcast import UDPBroadcastController
+from udp_broadcast import UDPBroadcastController
 
 def speedtest_thread(udp_broadcast):
     try:
@@ -14,6 +16,9 @@ def speedtest_thread(udp_broadcast):
         print("upload")
         st.upload()
         results = st.results.dict()
+        results['serial_number'] = os.environ.get("SERIAL_NUMBER", "???")
+        results['building_name'] = os.environ.get("BUILDING_NAME", "???")
+        requests.post("https://dev.nextgen.visibleaccess.net/field/splunk_log?msg=SPEEDTEST", json=results)
         print(results)
 
         if udp_broadcast:
