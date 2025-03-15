@@ -15,6 +15,7 @@ def speedtest_thread(udp_broadcast):
         st.download()
         print("upload")
         st.upload()
+
         results = st.results.dict()
         results['serial_number'] = os.environ.get("SERIAL_NUMBER", "???")
         results['building_name'] = os.environ.get("BUILDING_NAME", "???")
