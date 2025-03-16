@@ -155,12 +155,12 @@ LOGGING = {
     },
 
     'handlers': {
-        #'file': {
-        #    'level': 'DEBUG',
-        #    'class': 'logging.FileHandler',
-        #   'filename': os.path.join(os.getcwd(), "system.log"),
-         #   'formatter': 'simple'
-        #},
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+           'filename': os.path.join(os.getcwd(), "system.log"),
+            'formatter': 'simple'
+        },
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
@@ -169,7 +169,7 @@ LOGGING = {
 
     },
     'loggers': {
-        '#django.request': {
+        'django.request': {
             'handlers': ['file',  'console'],
             'level': 'DEBUG',
             'propagate': True,
