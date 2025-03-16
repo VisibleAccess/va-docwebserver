@@ -3,7 +3,7 @@ from threading import Thread
 import os
 import requests
 import time
-from udp_broadcast import UDPBroadcastController
+from .udp_broadcast import UDPBroadcastController
 
 def speedtest_thread(udp_broadcast):
     try:
