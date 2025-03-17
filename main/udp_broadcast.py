@@ -190,7 +190,7 @@ class UDPBroadcastController:
             self.poll()
             time.sleep(self._poll_interval)
 
-        logger.info("Exiting UDPBroadcastController...")
+        logging.info("Exiting UDPBroadcastController...")
 
 
     def is_alive(self):

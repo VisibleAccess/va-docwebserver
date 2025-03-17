@@ -3,8 +3,6 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from .speedtest_helper import start_speedtest
 
-import json
-
 from .udp_db import udp_db
 
 # Create your views here.

@@ -7,6 +7,8 @@ import dotenv
 
 from ast import literal_eval
 from .udp_broadcast import UDPBroadcastController
+from .i2cmonitor import I2CMonitorController
+from .ltemonitor import LTEMonitorController
 
 dotenv.load_dotenv()
 
@@ -94,23 +96,25 @@ class UDP_DB:
 
 port = int(os.getenv("UDP_PORT", "1120"))
 try:
-    udp_interfaces = os.getenv("UDP_INTERFACES", '["lo", "end0", "docker0"]')
+    default_interfaces = '["end0", "docker0"]'
+    udp_interfaces = os.getenv("UDP_INTERFACES", default_interfaces)
     interfaces = literal_eval(udp_interfaces)
 except Exception as e:
     print(e)
-    interfaces = ["lo", "end0", "docker0", "en0"]
+    interfaces = default_interfaces
 
 
 logging.basicConfig(level=logging.DEBUG)
+
 udp_db = UDP_DB(interfaces, port)
+i2c_monitor = I2CMonitorController(udp_broadcast=udp_db.udp_broadcast, poll_interval=60, start=True)
+lte_monitor = LTEMonitorController(udp_broadcast=udp_db.udp_broadcast, poll_interval=60, start=True)
+
 
 
 if __name__ == "__main__":
     logger_name = os.getenv("DOCWEB_LOGGER", "docweb")
     logger = logging.getLogger(logger_name)
-
-
-
 
     while True:
         udp_db.update()

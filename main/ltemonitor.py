@@ -7,25 +7,23 @@ import threading
 import time
 from ast import literal_eval
 
-from udp_broadcast import UDPBroadcastController
-from  gpio import GPIO
+from .udp_broadcast import UDPBroadcastController
 
-
-logger = logging.getLogger("LTEMonitor")
-logging.basicConfig(
-    format='%(asctime)s.%(msecs)03d %(levelname)-8s LTEMONITOR: %(message)s',
-    level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S')
 
 class LTEMonitorController:
 
-    def __init__(self, interfaces, udp_port, poll_interval=None, module_name="LTEMON", start=False):
+    def __init__(self, udp_broadcast=None, interfaces=None, udp_port=None, poll_interval=None,
+                 module_name="LTEMON", start=False):
 
         self._poll_interval=poll_interval
         self._kill_thread = False
         self.thread_id = None
+        self._module_name = module_name
 
-        self.udp_broadcast = UDPBroadcastController(interfaces=interfaces, port=udp_port, module_name=module_name)
+        if udp_broadcast:
+            self.udp_broadcast = udp_broadcast
+        else:
+            self.udp_broadcast = UDPBroadcastController(interfaces=interfaces, port=udp_port, module_name=module_name)
 
         if start is True:
             self.start()
@@ -43,7 +41,7 @@ class LTEMonitorController:
             self._poll_interval = poll_interval
 
         if self._poll_interval:
-            threading.Thread(target=self.i2cmonitor_thread).start()
+            threading.Thread(target=self.lte_monitor_thread).start()
 
     def _run_cmd(self, cmd, tag=None):
         process = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
@@ -64,18 +62,18 @@ class LTEMonitorController:
         response = self._run_cmd(["mmcli", "-m", "0", "--signal-get", "-J"])
         try:
             signal = json.loads(response)['modem']['signal']
-            self.udp_broadcast.udp_tx_broadcast(f"RAW:{json.dumps(signal)}")
-            self.udp_broadcast.udp_tx_broadcast(f"ERROR-RATE:{signal['lte']['error-rate']}")
-            self.udp_broadcast.udp_tx_broadcast(f"RSRP:{signal['lte']['rsrp']}")
-            self.udp_broadcast.udp_tx_broadcast(f"RSRQ:{signal['lte']['rsrq']}")
-            self.udp_broadcast.udp_tx_broadcast(f"RSSI:{signal['lte']['rssi']}")
-            self.udp_broadcast.udp_tx_broadcast(f"SNR{signal['lte']['snr']}")
+            self.udp_broadcast.udp_tx_broadcast(f"RAW:{json.dumps(signal)}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"ERROR-RATE:{signal['lte']['error-rate']}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"RSRP:{signal['lte']['rsrp']}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"RSRQ:{signal['lte']['rsrq']}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"RSSI:{signal['lte']['rssi']}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"SNR{signal['lte']['snr']}", module_name=self._module_name)
             return signal
         except Exception as e:
             return None
 
     def poll_thread(self):
-        self._signal_get()
+        self.signal_get()
         pass
 
 
@@ -90,21 +88,27 @@ class LTEMonitorController:
 
     def lte_monitor_thread(self):
         self.thread_id = threading.get_native_id()
-        logger.info(f"LTE starting thread {self.thread_id}")
+        logging.info(f"LTE starting thread {self.thread_id}")
 
         while self._kill_thread is False:
             self.poll()
             time.sleep(self._poll_interval)
 
-        logger.info("Exiting LTEMonitorController...")
+        logging.info("Exiting LTEMonitorController...")
 
 
 if __name__ == "__main__":
 
+    logger = logging.getLogger("LTEMonitor")
+    logging.basicConfig(
+        format='%(asctime)s.%(msecs)03d %(levelname)-8s LTEMONITOR: %(message)s',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S')
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--udp_port",  type=int, help="udp broadcast port", default=1120)
     parser.add_argument("-i", "--interfaces", type=str, help="udp interfaces",
-                        default='["lo", "eth0", "end0", "en0"]')
+                        default='["end0", "docker0"]')
     parser.add_argument("-m", "--module", type=str, help="module name", default="LTEMONITOR")
     parser.add_argument("-k", "--keepalive", type=str, help="keepalive message", default="PING")
 
@@ -113,7 +117,7 @@ if __name__ == "__main__":
     try:
         interfaces = literal_eval(args.interfaces)
     except:
-        interfaces = ["lo", "eth0"]
+        interfaces = ["end0", "docker0"]
 
 
     lte_controller = LTEMonitorController(interfaces, udp_port, module_name=args.module)
