@@ -21,6 +21,7 @@ class UDP_DB:
                                                     poll_interval=.5,
                                                     start=True)
         self._db['_version'] = 0
+        self._db['vpn_ip'] = os.getenv('VPN_IP', "")
 
     def udp_callback(self, msg):
 
@@ -108,7 +109,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 udp_db = UDP_DB(interfaces, port)
 i2c_monitor = I2CMonitorController(udp_broadcast=udp_db.udp_broadcast, poll_interval=60, start=True)
-lte_monitor = LTEMonitorController(udp_broadcast=udp_db.udp_broadcast, poll_interval=60, start=True)
+lte_monitor = LTEMonitorController(udp_broadcast=udp_db.udp_broadcast, poll_interval=30, start=True)
 
 
 
