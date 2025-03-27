@@ -13,12 +13,13 @@ from .udp_broadcast import UDPBroadcastController
 class LTEMonitorController:
 
     def __init__(self, udp_broadcast=None, interfaces=None, udp_port=None, poll_interval=None,
-                 module_name="LTEMON", start=False):
+                 module_name="LTEMONITOR", start=False):
 
         self._poll_interval=poll_interval
         self._kill_thread = False
         self.thread_id = None
         self._module_name = module_name
+        self._need_LTE_basic_info = True
 
         if udp_broadcast:
             self.udp_broadcast = udp_broadcast
@@ -56,30 +57,45 @@ class LTEMonitorController:
 
     def set_interval(self):
         response = self._run_cmd(["mmcli", "-m", "0", "--signal-setup=30"])
-        logger.info(f"LTE set interval response: {response}")
+        logging.info(f"LTE set interval response: {response}")
+
 
     def signal_get(self):
         response = self._run_cmd(["mmcli", "-m", "0", "--signal-get", "-J"])
         try:
+
             signal = json.loads(response)['modem']['signal']
-            self.udp_broadcast.udp_tx_broadcast(f"RAW:{json.dumps(signal)}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"LTE_RAW:{json.dumps(signal)}", module_name=self._module_name)
             self.udp_broadcast.udp_tx_broadcast(f"ERROR-RATE:{signal['lte']['error-rate']}", module_name=self._module_name)
             self.udp_broadcast.udp_tx_broadcast(f"RSRP:{signal['lte']['rsrp']}", module_name=self._module_name)
             self.udp_broadcast.udp_tx_broadcast(f"RSRQ:{signal['lte']['rsrq']}", module_name=self._module_name)
             self.udp_broadcast.udp_tx_broadcast(f"RSSI:{signal['lte']['rssi']}", module_name=self._module_name)
-            self.udp_broadcast.udp_tx_broadcast(f"SNR{signal['lte']['snr']}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"SNR:{signal['lte']['snr']}", module_name=self._module_name)
             return signal
         except Exception as e:
             return None
 
-    def poll_thread(self):
-        self.signal_get()
-        pass
+    def lte_basic_info_get(self):
+        response = self._run_cmd(["mmcli", "--sim", "0", "-J"])
+        try:
+            info = json.loads(response)['sim']['properties']
+            self.udp_broadcast.udp_tx_broadcast(f"SIM_RAW:{json.dumps(info)}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"OPERATOR-NAME:{info['operator-name']}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"ICCID:{info['iccid']}", module_name=self._module_name)
+            return info
+        except Exception as e:
+            return None
 
+    def poll_thread(self):
+        if self._need_LTE_basic_info:
+            self.set_interval()
+            self.lte_basic_info_get()
+            self._need_LTE_basic_info = False
+
+        self.signal_get()
 
     def poll(self):
         threading.Thread(target=self.poll_thread).start()
-
 
 
     def kill_thread(self):
