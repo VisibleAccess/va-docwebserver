@@ -1,3 +1,4 @@
+# Note - this compose file must be placed and run in the directory above docwebserver
 version: "3.7"
 
 services:
