@@ -7,6 +7,8 @@ import requests
 
 
 from ast import literal_eval
+from threading import Thread
+
 from .udp_broadcast import UDPBroadcastController
 from .i2cmonitor import I2CMonitorController
 from .ltemonitor import LTEMonitorController
@@ -127,14 +129,26 @@ except Exception as e:
 def get_building_info():
     vpn_ip = os.getenv('VPN_IP')
     url = f"https://dev.nextgen.visibleaccess.net/field/building_info"
-    r = requests.get(url, params={"ip": vpn_ip})
-    if r.status_code == 200:
+    while True:
         try:
-            info = json.loads(r.text)
-            udp_db.save_building_info(info['name'], info['address'], phone_number=info['phone_number'],
-                                      photo=info['photo'])
+            r = requests.get(url, params={"ip": vpn_ip}, timeout=3)
         except:
-            logging.info(f"Error parsing building info {r.text}")
+            logging.error("Get building_info timeout")
+            time.sleep(5)
+            continue
+
+        try:
+            if r.status_code == 200:
+                info = json.loads(r.text)
+                udp_db.save_building_info(info['name'], info['address'], phone_number=info['phone_number'],
+                                          photo=info['photo'])
+                return
+
+        except:
+            logging.error(f"Error parsing building info {r.text}")
+            time.sleep(5)
+            continue
+
 
 
 
@@ -144,7 +158,8 @@ udp_db = UDP_DB(interfaces, port)
 i2c_monitor = I2CMonitorController(udp_broadcast=udp_db.udp_broadcast, poll_interval=60, start=True)
 lte_monitor = LTEMonitorController(udp_broadcast=udp_db.udp_broadcast, poll_interval=30, start=True)
 
-get_building_info()
+# Get building info from thread so that it keeps running until it gets the building info
+Thread(target=get_building_info).start()
 
 if __name__ == "__main__":
     logger_name = os.getenv("DOCWEB_LOGGER", "docweb")
