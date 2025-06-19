@@ -102,12 +102,13 @@ class UDP_DB:
     def send_msg(self, msg):
         udp_db.udp_broadcast.udp_tx_broadcast(msg, module_name="")
 
-    def save_building_info(self, name, address, phone_number, photo=None):
+    def save_building_info(self, name, address, phone_number=None, photo=None):
         global udp_db
 
         self.save_value(["building", "name"], name)
         self.save_value(["building", "address"], address)
-        self.save_value(["building", "phone_number"], phone_number)
+        if phone_number is not None:
+            self.save_value(["building", "phone_number"], phone_number)
         if photo:
             self.save_value(["building", "photo"], photo)
 
@@ -130,7 +131,7 @@ def get_building_info():
     if r.status_code == 200:
         try:
             info = json.loads(r.text)
-            udp_db.save_building_info(info['name'], info['address'], info['phone_number'],
+            udp_db.save_building_info(info['name'], info['address'], phone_number=info['phone_number'],
                                       photo=info['photo'])
         except:
             logging.info(f"Error parsing building info {r.text}")

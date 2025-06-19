@@ -81,7 +81,7 @@ def building(request):
         print("building status", r.status_code)
         if r.status_code == 200:
             resp = json.loads(r.text)
-            udp_db.save_building_info(resp['name'], resp['address'], resp['photo'])
+            udp_db.save_building_info(resp['name'], resp['address'], photo=resp['photo'])
         return HttpResponse("OK", status=r.status_code)
     except:
         return HttpResponse("ERROR", status=http.client.BAD_REQUEST)
