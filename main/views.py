@@ -39,7 +39,6 @@ def speed_test(request):
 
 
 def default(request):
-    print(request)
     return render(request, 'index.html')
 
 
