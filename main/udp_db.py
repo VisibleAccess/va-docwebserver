@@ -3,6 +3,7 @@ import logging
 import os
 import time
 import dotenv
+import requests
 
 
 from ast import literal_eval
@@ -11,6 +12,8 @@ from .i2cmonitor import I2CMonitorController
 from .ltemonitor import LTEMonitorController
 
 dotenv.load_dotenv()
+
+udp_db = None
 
 class UDP_DB:
 
@@ -51,9 +54,13 @@ class UDP_DB:
         self._db['_version'] += 1
 
     def get_value(self, key_str):
+
         try:
-            key_vector = key_str.split(':', 2)
             db = self._db
+            if ':' not in key_str:
+                return db[key_str]
+
+            key_vector = key_str.split(':', 2)
             for key in key_vector:
                 db = db[key]
 
@@ -95,6 +102,15 @@ class UDP_DB:
     def send_msg(self, msg):
         udp_db.udp_broadcast.udp_tx_broadcast(msg, module_name="")
 
+    def save_building_info(self, name, address, phone_number, photo=None):
+        global udp_db
+
+        self.save_value(["building", "name"], name)
+        self.save_value(["building", "address"], address)
+        self.save_value(["building", "phone_number"], phone_number)
+        if photo:
+            self.save_value(["building", "photo"], photo)
+
 port = int(os.getenv("UDP_PORT", "1120"))
 try:
     default_interfaces = '["end0", "docker0"]'
@@ -105,13 +121,29 @@ except Exception as e:
     interfaces = default_interfaces
 
 
+
+
+def get_building_info():
+    vpn_ip = os.getenv('VPN_IP')
+    url = f"https://dev.nextgen.visibleaccess.net/field/building_info"
+    r = requests.get(url, params={"ip": vpn_ip})
+    if r.status_code == 200:
+        try:
+            info = json.loads(r.text)
+            udp_db.save_building_info(info['name'], info['address'], info['phone_number'],
+                                      photo=info['photo'])
+        except:
+            logging.info(f"Error parsing building info {r.text}")
+
+
+
 logging.basicConfig(level=logging.DEBUG)
 
 udp_db = UDP_DB(interfaces, port)
 i2c_monitor = I2CMonitorController(udp_broadcast=udp_db.udp_broadcast, poll_interval=60, start=True)
 lte_monitor = LTEMonitorController(udp_broadcast=udp_db.udp_broadcast, poll_interval=30, start=True)
 
-
+get_building_info()
 
 if __name__ == "__main__":
     logger_name = os.getenv("DOCWEB_LOGGER", "docweb")
