@@ -1,0 +1,25 @@
+# Note - this compose file must be placed and run in the directory above docwebserver
+version: "3.7"
+
+services:
+   docwebserver:
+
+    stdin_open: true
+    tty: true
+    restart: always
+    image: visibleaccess/webserver-controller
+    network_mode: host
+    privileged: true
+    container_name: webserver-controller
+    build:
+      context: .
+      dockerfile: docwebserver/Dockerfile
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    environment:
+      - DUMMY=1
+      - USE_VOLUMES=xyzzy1
+
+    volumes:
+      - /var/run/dbus:/var/run/dbus
