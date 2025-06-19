@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path
 from main.views import default
 from main.views import db_update_request
-from main.views import db_test, db_dump, udp_bcast, speed_test, lte_connected
+from main.views import db_test, db_dump, udp_bcast, speed_test, lte_connected, snapshot, building
 
 urlpatterns = [
     path('',               default,                  name='default'),
