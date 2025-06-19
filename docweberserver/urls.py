@@ -28,6 +28,8 @@ urlpatterns = [
     path('udp_bcast',      udp_bcast,                name='udp_bcast'),
     path('speedtest',      speed_test,               name='speedtest'),
     path('lte_connected',  lte_connected,            name='lte_connected'),
+    path('snapshot', snapshot, name='snapshot'),
+    path('building', building, name='building'),
     path('admin/', admin.site.urls),
 
 ]
