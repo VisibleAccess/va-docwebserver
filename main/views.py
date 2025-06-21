@@ -4,8 +4,10 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import JsonResponse
 from .speedtest_helper import start_speedtest
+from .register import register_device
 
 from .udp_db import udp_db
+from .models import parse_register_response
 
 import requests
 import json
@@ -88,6 +90,11 @@ def building(request):
 
 
 
+def register(request):
+    magic = request.GET.get('magic', "xyzzy")
+    response = register_device(magic)
+    parse_register_response(response)
+    return JsonResponse(response)
 
 
 
