@@ -7,6 +7,7 @@ from ast import literal_eval
 
 from .mcp9808 import MCP9808
 from .ina226 import INA226
+from .opi_zero3 import OPI_ZERO3
 
 
 
@@ -43,6 +44,16 @@ class I2CMonitorController:
         if self._poll_interval:
             threading.Thread(target=self.i2cmonitor_thread).start()
 
+
+    def poll_opi(self):
+        for i in range(0,4):
+            temp_core = OPI_ZERO3.core_temp(i)
+            self.udp_broadcast.udp_tx_broadcast(f"TEMP_CORE_{i}:{temp_core}", module_name="OPI")
+
+        uptime = OPI_ZERO3.uptime()
+        self.udp_broadcast.udp_tx_broadcast(f"UPTIME:{uptime}", module_name="OPI")
+
+
     def poll(self):
         temperature = self._mcp9808.read_temperature()
         self.udp_broadcast.udp_tx_broadcast(f"TEMP:{temperature}", module_name=self._module_name)
@@ -55,6 +66,11 @@ class I2CMonitorController:
         self.udp_broadcast.udp_tx_broadcast(f"V1SHUNT:{round(v1_shunt,1)}", module_name=self._module_name)
         w1 = self._ina226.power()
         self.udp_broadcast.udp_tx_broadcast(f"W1:{round(w1)}", module_name=self._module_name)
+
+        self.poll_opi()
+
+
+
 
 
     def kill_thread(self):
