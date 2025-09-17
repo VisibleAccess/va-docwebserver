@@ -128,7 +128,8 @@ except Exception as e:
 
 def get_building_info():
     vpn_ip = os.getenv('VPN_IP')
-    url = f"https://dev.nextgen.visibleaccess.net/field/building_info"
+    host = os.getenv("HOST", "https://staging.nextgen.visibleaccess.net" )
+    url = f"{host}/field/building_info"
     while True:
         try:
             r = requests.get(url, params={"ip": vpn_ip}, timeout=3)

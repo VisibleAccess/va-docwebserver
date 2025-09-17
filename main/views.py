@@ -9,13 +9,18 @@ from .register import register_device
 from .udp_db import udp_db
 from .models import parse_register_response
 
+import os
 import requests
 import json
+import random
 
 # Create your views here.
 vpn_ip = udp_db.get_value('vpn_ip')
-host_dev = "https://dev.nextgen.visibleaccess.net"
-host = "https://nextgen.visibleaccess.net"
+host = os.getenv("HOST", "https://nextgen.visibleaccess.net" )
+
+
+
+
 def db_dump(request):
     return JsonResponse(udp_db._db)
     db_str = udp_db.db_str()
@@ -41,7 +46,7 @@ def speed_test(request):
 
 
 def default(request):
-    return render(request, 'index.html')
+    return render(request, 'index.html', {'script_version': str(random.random())})
 
 
 def udp_bcast(request):
@@ -52,7 +57,10 @@ def udp_bcast(request):
 
 def lte_connected(request):
     try:
-        r = requests.get("https://httpstat.us/200")
+        default_url = f"{host}/field/lte_status"
+        lte_timeout = int(os.getenv("LTE_CONNECT_TIMEOUT", 6))
+        url = os.getenv("LTE_CONNECT_STATUS_URL", default_url)
+        r = requests.get(url, timeout=lte_timeout)
         if r.status_code == 200:
             return HttpResponse("OK")
     except:
@@ -63,7 +71,7 @@ def snapshot(request):
     try:
         add_rotation = int(request.GET.get("add_rotation", 0))
         if vpn_ip:
-            url = f"{host_dev}/field/vpn_snapshot?ip=10.1.1.16&add_rotation={add_rotation}"
+            url = f"{host}/field/vpn_snapshot?ip={vpn_ip}&add_rotation={add_rotation}"
             r = requests.get(url, timeout=6)
             if r.status_code == 200:
                 return HttpResponse(r.content, content_type="image/jpeg")
@@ -78,7 +86,7 @@ def building(request):
     address = request.GET.get('address')
 
     try:
-        url = f"https://dev.nextgen.visibleaccess.net/field/building_info"
+        url = f"{host}/field/building_info"
         r = requests.get(url, params={"name":name, "address":address, "set": 1, "ip": vpn_ip})
         print("building status", r.status_code)
         if r.status_code == 200:
@@ -91,8 +99,9 @@ def building(request):
 
 
 def register(request):
-    magic = request.GET.get('magic', "xyzzy")
-    response = register_device(magic)
+    magic = request.GET.get('magic', "foobar")
+    #response = register_device(host, magic)
+    response = register_device("https://staging.nextgen.visibleaccess.net", magic)
     parse_register_response(response)
     return JsonResponse(response)
 

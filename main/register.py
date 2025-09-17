@@ -147,7 +147,7 @@ class DOC_INFO:
 #enc_username = (camera_username,magic)
 #enc_password = cryptocode.encrypt(camera_password,magic)
 
-def register_device(magic):
+def register_device(host, magic):
     cypher_username = os.getenv("CAMERA_USERNAME")
     cypher_password = os.getenv("CAMERA_PASSWORD")
 
@@ -163,7 +163,7 @@ def register_device(magic):
     lte_info.gather_all(info)
     camera_info.gather_all(info)
 
-    host = "https://dev.nextgen.visibleaccess.net/field/register"
+    host = f"{host}/field/register"
     r = requests.post(host, json=info)
     try:
         response_json = json.loads(r.text)
