@@ -75,6 +75,19 @@ class LTEMonitorController:
         except Exception as e:
             return None
 
+    def location_get(self):
+        response = self._run_cmd(["mmcli", "-m", "0", "--location-get", "-J"])
+        try:
+            location = json.loads(response)['modem']['location']['3gpp']
+            self.udp_broadcast.udp_tx_broadcast(f"CID:{location['cid']}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"LAC:{location['lac']}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"MCC:{location['mcc']}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"MNC:{location['mnc']}", module_name=self._module_name)
+            self.udp_broadcast.udp_tx_broadcast(f"TAC:{location['tac']}", module_name=self._module_name)
+            return location
+        except Exception as e:
+            return None
+
     def lte_basic_info_get(self):
         response = self._run_cmd(["mmcli", "--sim", "0", "-J"])
         try:
@@ -93,6 +106,7 @@ class LTEMonitorController:
             self._need_LTE_basic_info = False
 
         self.signal_get()
+        self.location_get()
 
     def poll(self):
         threading.Thread(target=self.poll_thread).start()
