@@ -16,7 +16,7 @@ import random
 
 # Create your views here.
 vpn_ip = udp_db.get_value('vpn_ip')
-host = os.getenv("HOST", "https://nextgen.visibleaccess.net" )
+host = os.getenv("HOST", "https://staging.nextgen.visibleaccess.net" )
 
 
 
@@ -99,12 +99,23 @@ def building(request):
 
 
 def register(request):
-    magic = request.GET.get('magic', "foobar")
-    #response = register_device(host, magic)
-    response = register_device("https://staging.nextgen.visibleaccess.net", magic)
-    parse_register_response(response)
+    try:
+        magic = request.GET.get('magic', "foobar")
+        response = register_device(host, magic)
+        parse_register_response(response)
+    except Exception as e:
+        response = {'error': e}
+
     return JsonResponse(response)
 
 
 
+def sysinfo(request):
+    try:
+        magic = request.GET.get('magic', "foobar")
+        response = register_device(None, magic)
+    except Exception as e:
+        response = {'error': e}
+
+    return JsonResponse(response)
 
