@@ -19,7 +19,8 @@ def speedtest_thread(udp_broadcast):
         results = st.results.dict()
         results['serial_number'] = os.environ.get("SERIAL_NUMBER", "???")
         results['building_name'] = os.environ.get("BUILDING_NAME", "???")
-        requests.post("https://dev.nextgen.visibleaccess.net/field/splunk_log?msg=SPEEDTEST", json=results)
+        host = os.getenv("HOST", "https://nextgen.visibleaccess.net")
+        requests.post(f"{host}/field/splunk_log?msg=SPEEDTEST", json=results)
         print(results)
 
         if udp_broadcast:

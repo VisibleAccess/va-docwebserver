@@ -89,10 +89,6 @@ class LTE_INFO:
             pass
 
 
-
-
-
-
 class DOC_INFO:
     def __init__(self, device_type="DOC-1"):
         self.dmesg = self.get_dmesg()
@@ -162,6 +158,9 @@ def register_device(host, magic):
     doc_info.gather_all(info)
     lte_info.gather_all(info)
     camera_info.gather_all(info)
+
+    if host is None:
+        return info
 
     host = f"{host}/field/register"
     r = requests.post(host, json=info)
