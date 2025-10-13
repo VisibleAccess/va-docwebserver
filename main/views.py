@@ -3,11 +3,14 @@ import http.client
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
 from .speedtest_helper import start_speedtest
 from .register import register_device
 
-from .udp_db import udp_db
+from .udp_db import udp_db, update_building_info
 from .models import parse_register_response
+from .models import upload_file_to_to_s3
 
 import os
 import requests
@@ -16,12 +19,14 @@ import random
 
 # Create your views here.
 vpn_ip = udp_db.get_value('vpn_ip')
-host = os.getenv("HOST", "https://staging.nextgen.visibleaccess.net" )
+host = os.getenv("HOST", "https://nextgen.visibleaccess.net" )
 
 
 
 
 def db_dump(request):
+    if request.GET.get("refresh"):
+        update_building_info()
     return JsonResponse(udp_db._db)
     db_str = udp_db.db_str()
     db_str = db_str.replace('\n', '<br>')
@@ -80,21 +85,30 @@ def snapshot(request):
 
     return HttpResponse(status=http.client.BAD_REQUEST)
 
-
+@csrf_exempt
 def building(request):
-    name = request.GET.get('name')
-    address = request.GET.get('address')
-
     try:
+        body = json.loads(request.body)
+        name = body.get('name')
+        address = body.get('new_address')
+        photo = body.get("photo_url")
+        save = body.get("save", 0)
+
+        if save:
+            save = 1
+        else:
+            save = 0
+
         url = f"{host}/field/building_info"
-        r = requests.get(url, params={"name":name, "address":address, "set": 1, "ip": vpn_ip})
+        r = requests.get(url, params={"name":name, "address":address, "set": save, "ip": vpn_ip, "photo":photo})
         print("building status", r.status_code)
+        resp = {}
         if r.status_code == 200:
             resp = json.loads(r.text)
             udp_db.save_building_info(resp['name'], resp['address'], photo=resp['photo'])
-        return HttpResponse("OK", status=r.status_code)
-    except:
-        return HttpResponse("ERROR", status=http.client.BAD_REQUEST)
+        return JsonResponse(status=http.client.OK, data=resp)
+    except Exception as e:
+        return JsonResponse(status=http.client.BAD_REQUEST, data={"error": e})
 
 
 
@@ -118,4 +132,17 @@ def sysinfo(request):
         response = {'error': e}
 
     return JsonResponse(response)
+
+@csrf_exempt
+def upload_file(request):
+    info = dict()
+    info['files'] = []
+
+    for key in request.FILES:
+        url = upload_file_to_to_s3(request.FILES[key], None)
+        info['files'].append(url)
+
+    udp_db.save_building_info(None, None, photo = info['files'][0])
+
+    return JsonResponse(info, status=http.client.OK)
 

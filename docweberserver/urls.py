@@ -19,7 +19,7 @@ from django.urls import path
 from main.views import default
 from main.views import db_update_request
 from main.views import db_test, db_dump, udp_bcast, speed_test, lte_connected, snapshot, building, register
-from main.views import sysinfo
+from main.views import sysinfo, upload_file
 
 urlpatterns = [
     path('',               default,                  name='default'),
@@ -32,6 +32,7 @@ urlpatterns = [
     path('snapshot', snapshot, name='snapshot'),
     path('building', building, name='building'),
     path('register', register, name='register'),
+    path('upload_file', upload_file, name='upload_file'),
     path('sysinfo',  sysinfo,  name='sysinfo'),
     path('admin/', admin.site.urls),
 

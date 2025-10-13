@@ -104,14 +104,16 @@ class UDP_DB:
     def send_msg(self, msg):
         udp_db.udp_broadcast.udp_tx_broadcast(msg, module_name="")
 
-    def save_building_info(self, name, address, phone_number=None, photo=None):
+    def save_building_info(self, name, address, phone_number=None, photo=None, override=False):
         global udp_db
 
-        self.save_value(["building", "name"], name)
-        self.save_value(["building", "address"], address)
-        if phone_number is not None:
+        if override or name is not None:
+            self.save_value(["building", "name"], name)
+        if override or address is not None:
+            self.save_value(["building", "address"], address)
+        if override or phone_number is not None:
             self.save_value(["building", "phone_number"], phone_number)
-        if photo:
+        if override or photo is not None:
             self.save_value(["building", "photo"], photo)
 
 port = int(os.getenv("UDP_PORT", "1120"))
@@ -142,7 +144,7 @@ def get_building_info():
             if r.status_code == 200:
                 info = json.loads(r.text)
                 udp_db.save_building_info(info['name'], info['address'], phone_number=info['phone_number'],
-                                          photo=info['photo'])
+                                          photo=info['photo'], override=True)
                 return
 
         except:
@@ -151,7 +153,9 @@ def get_building_info():
             continue
 
 
-
+def update_building_info():
+    # Get building info from thread so that it keeps running until it gets the building info
+    Thread(target=get_building_info).start()
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -159,8 +163,7 @@ udp_db = UDP_DB(interfaces, port)
 i2c_monitor = I2CMonitorController(udp_broadcast=udp_db.udp_broadcast, poll_interval=60, start=True)
 lte_monitor = LTEMonitorController(udp_broadcast=udp_db.udp_broadcast, poll_interval=30, start=True)
 
-# Get building info from thread so that it keeps running until it gets the building info
-Thread(target=get_building_info).start()
+update_building_info()
 
 if __name__ == "__main__":
     logger_name = os.getenv("DOCWEB_LOGGER", "docweb")
