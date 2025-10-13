@@ -115,7 +115,8 @@ def building(request):
 def register(request):
     try:
         magic = request.GET.get('magic', "foobar")
-        response = register_device(host, magic)
+        register_host = request.GET.get("host", host)
+        response = register_device(register_host, magic)
         parse_register_response(response)
     except Exception as e:
         response = {'error': e}
