@@ -33,14 +33,14 @@ class CAMERA_INFO:
 
     def gather_all(self, info):
         try:
+            info['CAMERA'] = dict()
             t = int(time.time())
             url = f"http://{self.username}:{self.password}@{self.ip_address}/cgi-bin/web.cgi?mod=device&cmd=get&_={t}"
-            response = requests.get(url)
+            response = requests.get(url, timeout=2)
             device_info = json.loads(response.text)
             url = f"http://{self.username}:{self.password}@{self.ip_address}/cgi-bin/web.cgi?mod=net&cmd=get&_={t}"
-            response = requests.get(url)
+            response = requests.get(url, timeout=2)
             net_info = json.loads(response.text)
-            info['CAMERA'] = dict()
             info['CAMERA']['device_type'] = device_info['devtype']
             info['CAMERA']['serial_number'] = device_info['serial_num']
             info['CAMERA']['mac_address'] = net_info['mac']
